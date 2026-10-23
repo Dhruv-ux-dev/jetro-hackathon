@@ -15,7 +15,7 @@ import {
 import { loadNeedHead } from './head';
 import { fromDevanagari, loadLanguagePacks, withLanguagePacks, type LanguagePack } from './langpacks';
 import { ASR_MODELS, EMBED_MODEL, MODEL_DIR, type AsrSize } from './models';
-import { createNllb, type Translator } from './translate';
+import { createWorkerTranslator, type Translator } from './translate';
 
 /**
  * The crew tablet's offline AI: Whisper for speech → text and
@@ -428,7 +428,8 @@ export class AiEngine {
   async translate(text: string, from: string, to: string): Promise<string> {
     if (from === to) return text;
     const translator = await this.loadTranslator();
-    return this.serial(() => withTimeout(translator.translate(text, from, to), 30_000));
+    // In a worker thread: not queued behind Whisper, and the hub keeps answering meanwhile.
+    return withTimeout(translator.translate(text, from, to), 30_000);
   }
 
   /** Start loading the translation model (~15 s the first time), e.g. when a crew member opens "own words". */
@@ -437,7 +438,7 @@ export class AiEngine {
   }
 
   private loadTranslator(): Promise<Translator> {
-    this.translator ??= (this.options.loadTranslator ?? (() => createNllb(this.options.threads)))().catch((e: unknown) => {
+    this.translator ??= (this.options.loadTranslator ?? (() => createWorkerTranslator(this.options.threads)))().catch((e: unknown) => {
       this.translator = null;
       throw e;
     });

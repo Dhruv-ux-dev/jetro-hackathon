@@ -1472,6 +1472,10 @@ svg {
   background: var(--c-success-soft);
   color: var(--c-success);
 }
+.stage-chip.warn {
+  background: color-mix(in srgb, var(--c-warning) 15%, transparent);
+  color: var(--c-warning);
+}
 .stage-chip svg {
   width: 14px;
   height: 14px;

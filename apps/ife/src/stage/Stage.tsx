@@ -138,6 +138,10 @@ function modelLabel(m?: { state: string; typicalMs?: number }): string {
 
 export function Stage() {
   const status = useHubStatus(4000);
+  // Once the hub has answered, never swap the stage for the "needs the hub" page: that would reload both apps and lose
+  // what is on them (a crew member's half-sent reply). A hub that stops answering gets a notice instead.
+  const wasOnline = useRef(false);
+  if (status) wasOnline.current = true;
   const [items, setItems] = useState<Item[]>([]);
   const [passenger, setPassenger] = useState<'phone' | 'bengali' | 'ife'>('phone');
   const [packs, setPacks] = useState<{ code: string; name: string; draft: string }[]>([]);
@@ -236,7 +240,7 @@ export function Stage() {
   const fast = !!status?.asr.model.endsWith('base');
   const switchSpeech = () => fetch(`/api/asr?size=${fast ? 'small' : 'base'}`, { method: 'POST' }).catch(() => undefined);
 
-  if (status === null) {
+  if (status === null && !wasOnline.current) {
     return (
       <div className="stage stage--nohub">
         <div className="stage-nohub">
@@ -267,6 +271,11 @@ export function Stage() {
         </a>
         <span className="stage-title">Live demo · seat 23C ↔ cabin crew</span>
         <div className="stage-chips">
+          {status === null && (
+            <span className="stage-chip warn" role="status">
+              <WifiOff aria-hidden /> cabin hub not answering…
+            </span>
+          )}
           <button
             className={`stage-chip${ready(status?.asr.state) ? ' ok' : ''}`}
             title={`${status?.asr.model ?? ''} · click to switch between accurate (small) and fast (base)`}

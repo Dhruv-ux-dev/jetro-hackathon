@@ -17,18 +17,29 @@ export function detectHub(): Promise<HubStatus | null> {
   return first;
 }
 
-/** Live hub status (models loading → ready, connected devices). */
-export function useHubStatus(pollMs = 3000): HubStatus | null | undefined {
+/**
+ * Live hub status (models loading → ready, connected devices). Once the hub has
+ * answered, it counts as gone only after `patience` missed polls in a row: a hub
+ * busy transcribing or translating can miss one, and the stage must not tear
+ * down (and reload) its apps for that.
+ */
+export function useHubStatus(pollMs = 3000, patience = 3): HubStatus | null | undefined {
   const [status, setStatus] = useState<HubStatus | null | undefined>(undefined);
   useEffect(() => {
     let alive = true;
-    const check = () => fetchHubStatus(hubBaseUrl()).then((s) => alive && setStatus(s));
+    let misses = 0;
+    const check = () =>
+      fetchHubStatus(hubBaseUrl()).then((s) => {
+        if (!alive) return;
+        misses = s ? 0 : misses + 1;
+        setStatus((prev) => s ?? (prev && misses < patience ? prev : null));
+      });
     void check();
     const t = setInterval(check, pollMs);
     return () => {
       alive = false;
       clearInterval(t);
     };
-  }, [pollMs]);
+  }, [pollMs, patience]);
   return status;
 }

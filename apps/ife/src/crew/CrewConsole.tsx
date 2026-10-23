@@ -615,6 +615,7 @@ function VoiceReply({ r, tablet }: { r: CrewRequest; tablet: CrewTabletApi }) {
   const start = async () => {
     setError(null);
     setResult(null);
+    setOwnWords(null);
     try {
       await rec.current.start(() => undefined, () => void finish());
       setPhase('listening');

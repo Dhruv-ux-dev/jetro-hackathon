@@ -6,6 +6,7 @@
  */
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { Worker } from 'node:worker_threads';
 import { loadTransformers } from './ai';
 import { MODEL_DIR, TRANSLATE_MODEL } from './models';
 
@@ -45,6 +46,40 @@ export function keepTarget(text: string, script: string): string {
 
 export function translationModelInstalled(): boolean {
   return existsSync(join(MODEL_DIR, TRANSLATE_MODEL, 'onnx'));
+}
+
+/** NLLB in a worker thread, so loading and translating never stall the hub's network handling. */
+export function createWorkerTranslator(threads: number): Promise<Translator> {
+  if (!translationModelInstalled()) return Promise.reject(new Error('translation model not installed: npm run models -- translate'));
+  const worker = new Worker(new URL('./translateWorker.ts', import.meta.url), { workerData: { threads } });
+  worker.unref();
+  const pending = new Map<number, { resolve: (t: string) => void; reject: (e: Error) => void }>();
+  let next = 0;
+  return new Promise<Translator>((resolve, reject) => {
+    worker.on('message', (m: { kind: 'ready' } | { kind: 'failed'; error: string } | { kind: 'done'; id: number; text?: string; error?: string }) => {
+      if (m.kind === 'ready')
+        resolve({
+          translate: (text, from, to) =>
+            new Promise((res, rej) => {
+              const id = next++;
+              pending.set(id, { resolve: res, reject: rej });
+              worker.postMessage({ id, text, from, to });
+            }),
+        });
+      else if (m.kind === 'failed') reject(new Error(m.error));
+      else {
+        const p = pending.get(m.id);
+        pending.delete(m.id);
+        if (m.error !== undefined) p?.reject(new Error(m.error));
+        else p?.resolve(m.text ?? '');
+      }
+    });
+    worker.on('error', (e: Error) => {
+      reject(e);
+      for (const p of pending.values()) p.reject(e);
+      pending.clear();
+    });
+  });
 }
 
 export async function createNllb(threads: number): Promise<Translator> {
