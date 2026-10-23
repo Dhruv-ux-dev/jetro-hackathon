@@ -59,8 +59,18 @@ function describe(m: CabinMessage, state: CrewTabletState | null): Item | null {
       return { id, at: Date.now(), dir: 'to-passenger', title: `Crew tablet confirmed it received ${m.seat}'s request`, tone: 'ok' };
     case 'request.reply': {
       const req = state?.requests.find((r) => r.requestId === m.requestId);
-      const reply = getReply(m.replyId);
       const lang = req?.lang ?? 'en';
+      if (m.message) {
+        return {
+          id,
+          at: Date.now(),
+          dir: 'to-passenger',
+          title: `${m.crewName ?? 'Crew'} wrote in their own words “${m.message.original}”`,
+          detail: `${m.seat} sees and hears (${languageInfo(lang).englishName}, machine-translated on this laptop): “${m.message.text}”`,
+          tone: 'ok',
+        };
+      }
+      const reply = getReply(m.replyId ?? 'bringing_now');
       return {
         id,
         at: Date.now(),

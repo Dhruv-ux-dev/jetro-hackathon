@@ -2338,6 +2338,66 @@ svg {
   flex-direction: column;
   gap: 6px;
 }
+.crew2-own__open {
+  margin-top: 6px;
+  border: 0;
+  background: none;
+  color: var(--c-primary-strong);
+  font-weight: 700;
+  text-decoration: underline;
+  padding: 4px 0;
+  cursor: pointer;
+}
+.crew2-own {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.crew2-own__label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.crew2-own__label textarea {
+  font: inherit;
+  font-weight: 400;
+  font-size: 15px;
+  border: 1px solid var(--c-border);
+  border-radius: 10px;
+  padding: 8px;
+  background: var(--c-surface);
+  color: var(--c-text);
+  resize: vertical;
+}
+.crew2-own__btn {
+  align-self: flex-start;
+  border: 1px solid var(--c-border);
+  border-radius: 999px;
+  background: var(--c-surface-alt);
+  color: var(--c-text);
+  padding: 6px 14px;
+  font-weight: 700;
+}
+.crew2-own__preview {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--c-warning) 10%, transparent);
+}
+.crew2-own__preview q {
+  font-size: 17px;
+  font-weight: 700;
+}
+.ife-reply__machine {
+  margin: 0;
+  color: var(--c-warning);
+  font-weight: 700;
+}
 .crew2-replies {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));

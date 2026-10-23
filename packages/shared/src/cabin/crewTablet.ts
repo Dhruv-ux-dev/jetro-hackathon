@@ -1,5 +1,5 @@
 import { getNeed } from '../catalog/needs';
-import type { LangCode, MedicalReport, NeedPurpose, ProfileTag, ReplyId, RequestSource, Understanding } from '../types';
+import type { CrewMessage, LangCode, MedicalReport, NeedPurpose, ProfileTag, ReplyId, RequestSource, Understanding } from '../types';
 import type { CabinBus } from './bus';
 import type { CabinMessage, DeviceKind } from './protocol';
 
@@ -25,7 +25,7 @@ export interface CrewRequest {
   createdAt: number;
   receivedAt: number;
   status: 'new' | 'replied' | 'cancelled' | 'thanked';
-  reply?: { replyId: ReplyId; at: number };
+  reply?: { replyId?: ReplyId; message?: CrewMessage; at: number };
   understanding?: Understanding;
   medical?: MedicalReport;
   spokenLang?: string;
@@ -59,6 +59,8 @@ export interface CrewTabletApi {
   getState(): CrewTabletState;
   subscribe(listener: (s: CrewTabletState) => void): () => void;
   reply(requestId: string, replyId: ReplyId): void;
+  /** The crew member's own words, machine-translated: shown to the passenger as such. */
+  sendMessage(requestId: string, message: CrewMessage): void;
   announce(templateId: string): void;
   setAutoReply(autoReply: boolean): void;
   /** Clear all requests and captions (demo reset). */
@@ -121,6 +123,15 @@ export class CrewTablet implements CrewTabletApi {
     this.clearAuto(requestId);
     this.patch(requestId, { status: req.status === 'thanked' ? 'thanked' : 'replied', reply: { replyId, at } });
     this.bus.post({ type: 'request.reply', requestId, seat: req.seat, replyId, crewName: this.crewName, at });
+  }
+
+  sendMessage(requestId: string, message: CrewMessage): void {
+    const req = this.state.requests.find((r) => r.requestId === requestId);
+    if (!req || req.status === 'cancelled') return;
+    const at = this.now();
+    this.clearAuto(requestId);
+    this.patch(requestId, { status: req.status === 'thanked' ? 'thanked' : 'replied', reply: { message, at } });
+    this.bus.post({ type: 'request.reply', requestId, seat: req.seat, message, crewName: this.crewName, at });
   }
 
   reset(): void {

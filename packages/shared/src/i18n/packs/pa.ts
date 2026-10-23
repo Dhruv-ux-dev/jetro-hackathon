@@ -146,6 +146,7 @@ export const PA: LocalePack = {
     'requests.showCard': 'ਕਰੂ ਨੂੰ ਵਿਖਾਓ',
     'requests.limit': 'ਇਹ ਬੇਨਤੀ ਪਹਿਲਾਂ ਹੀ ਖੁੱਲ੍ਹੀ ਹੈ।',
     'reply.from': 'ਕੈਬਿਨ ਕਰੂ',
+    'reply.machine': 'ਮਸ਼ੀਨ ਅਨੁਵਾਦ, ਗਲਤੀ ਹੋ ਸਕਦੀ ਹੈ',
     'reply.playAgain': 'ਦੁਬਾਰਾ ਸੁਣਾਓ',
     'card.title': 'ਕਰੂ ਨੂੰ ਵਿਖਾਓ',
     'card.hint': 'ਤਸਵੀਰ ਵੱਲ ਇਸ਼ਾਰਾ ਕਰੋ ਅਤੇ ਸਕਰੀਨ ਕਰੂ ਨੂੰ ਵਿਖਾਓ। ਕਨੈਕਸ਼ਨ ਤੋਂ ਬਿਨਾਂ ਵੀ ਚੱਲਦਾ ਹੈ।',

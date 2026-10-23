@@ -1,4 +1,4 @@
-import { getAnnouncement, getNeed, getReply, type LangCode, languageInfo, localized, type PassengerSession, translator, replyTextOf, type Speaker } from '@hearme/shared';
+import { crewReplyText, getAnnouncement, getNeed, type LangCode, languageInfo, localized, type PassengerSession, translator, type Speaker } from '@hearme/shared';
 import { useSession } from '@hearme/shared/react';
 import { Heart, Megaphone, Volume2, X } from 'lucide-react';
 import { useEffect, useRef, type ReactNode } from 'react';
@@ -48,7 +48,7 @@ export function ReplyDialog({ session, lang, requestId, speaker }: { session: Pa
   const r = useSession(session, (s) => s.requests.find((x) => x.id === requestId));
   const prefs = useSession(session, (s) => s.prefs);
   const tr = translator(lang);
-  const text = r?.reply ? replyTextOf(getReply(r.reply.replyId), lang) : '';
+  const text = crewReplyText(r?.reply, lang);
   const voice = prefs.replyChannels.includes('voice') && speaker.available();
   useEffect(() => {
     if (voice && text) speaker.speak(text, languageInfo(lang).bcp47);
@@ -67,6 +67,7 @@ export function ReplyDialog({ session, lang, requestId, speaker }: { session: Pa
       <p id="reply-text" className="ife-reply__text">
         {text}
       </p>
+      {r.reply.message && <p className="ife-reply__machine">⚠ {tr('reply.machine')}</p>}
       {need && (
         <span className="ife-reply__icon">
           <NeedIcon name={need.private ? 'hand-helping' : need.icon} size="100%" />

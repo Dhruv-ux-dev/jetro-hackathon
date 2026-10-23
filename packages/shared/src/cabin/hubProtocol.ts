@@ -1,5 +1,5 @@
 import { LANGUAGES } from '../i18n/languages';
-import type { BodyArea, ConditionId, LangCode, MedicalReport, NeedPurpose, ProfileTag, ReplyId, SymptomId, Understanding } from '../types';
+import type { BodyArea, ConditionId, CrewMessage, LangCode, MedicalReport, NeedPurpose, ProfileTag, ReplyId, SymptomId, Understanding } from '../types';
 import type { CrewTabletState } from './crewTablet';
 import type { CabinMessage, PassengerToCrew } from './protocol';
 
@@ -16,6 +16,7 @@ export type HubRole = 'passenger' | 'crew' | 'observer';
 /** Commands a crew console sends to the hub's crew tablet. */
 export type CrewCommand =
   | { type: 'reply'; requestId: string; replyId: ReplyId }
+  | { type: 'message'; requestId: string; message: CrewMessage }
   | { type: 'announce'; templateId: string }
   | { type: 'autoReply'; on: boolean }
   | { type: 'reset' };
@@ -181,6 +182,11 @@ export function parseClientFrame(raw: unknown): ClientFrame | null {
     const c = raw.cmd;
     if (c.type === 'reply' && isId(c.requestId) && typeof c.replyId === 'string' && REPLY_IDS.has(c.replyId as ReplyId)) {
       return { kind: 'crew', cmd: { type: 'reply', requestId: c.requestId, replyId: c.replyId as ReplyId } };
+    }
+    if (c.type === 'message' && isId(c.requestId) && isObj(c.message)) {
+      const { original, text, lang } = c.message;
+      const ok = (s: unknown, max: number): s is string => typeof s === 'string' && s.trim().length > 0 && s.length <= max;
+      if (ok(original, 300) && ok(text, 600) && ok(lang, 8)) return { kind: 'crew', cmd: { type: 'message', requestId: c.requestId, message: { original, text, lang } } };
     }
     if (c.type === 'announce' && isStr(c.templateId)) return { kind: 'crew', cmd: { type: 'announce', templateId: c.templateId } };
     if (c.type === 'autoReply' && typeof c.on === 'boolean') return { kind: 'crew', cmd: { type: 'autoReply', on: c.on } };

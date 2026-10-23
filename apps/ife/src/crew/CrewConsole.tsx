@@ -584,7 +584,8 @@ function Detail({ r, tablet, viaHub }: { r: CrewRequest; tablet: CrewTabletApi; 
         ))}
       </div>
       <p className="crew2-preview" lang="en">
-        Passenger sees ({languageInfo(r.lang).englishName}): <q lang={languageInfo(r.lang).bcp47}>{replyTextOf(getReply(r.reply?.replyId ?? suggested), r.lang)}</q>
+        Passenger sees ({languageInfo(r.lang).englishName}{r.reply?.message ? ', machine-translated' : ''}):{' '}
+        <q lang={languageInfo(r.lang).bcp47}>{r.reply?.message ? r.reply.message.text : replyTextOf(getReply(r.reply?.replyId ?? suggested), r.lang)}</q>
       </p>
     </div>
   );
@@ -597,6 +598,7 @@ function VoiceReply({ r, tablet }: { r: CrewRequest; tablet: CrewTabletApi }) {
   const [result, setResult] = useState<{ transcript: string; replyId: ReplyId | null; confidence: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<{ p: UnderstandProgress; since: number } | null>(null);
+  const [ownWords, setOwnWords] = useState<string | null>(null);
   const [, redraw] = useState(0);
   useEffect(() => {
     if (phase !== 'thinking') return;
@@ -606,6 +608,7 @@ function VoiceReply({ r, tablet }: { r: CrewRequest; tablet: CrewTabletApi }) {
   useEffect(() => {
     setResult(null);
     setError(null);
+    setOwnWords(null);
   }, [r.requestId]);
   useEffect(() => () => rec.current.cancel(), []);
 
@@ -625,6 +628,7 @@ function VoiceReply({ r, tablet }: { r: CrewRequest; tablet: CrewTabletApi }) {
     try {
       const res = await recordAndUnderstand(rec.current, hubBaseUrl(), 'ja', 'replies', (p) => setProgress({ p, since: Date.now() }));
       setResult({ transcript: res.transcript, replyId: res.reply?.replyId ?? null, confidence: res.reply?.confidence ?? 0 });
+      setOwnWords(res.transcript);
     } catch {
       setError('Could not understand. Tap a reply instead.');
     }
@@ -659,9 +663,75 @@ function VoiceReply({ r, tablet }: { r: CrewRequest; tablet: CrewTabletApi }) {
             </button>
           ) : (
             <p className="crew2-note" lang="en">
-              No verified reply matched closely enough. Tap one below: passengers only receive checked translations.
+              No verified reply matched closely enough. Tap a checked reply below, or send your own words (machine-translated).
             </p>
           )}
+        </div>
+      )}
+      {ownWords === null ? (
+        <button className="crew2-own__open" onClick={() => setOwnWords('')}>
+          自分の言葉で書く · Type your own words
+        </button>
+      ) : (
+        <OwnWords key={result?.transcript ?? ''} r={r} tablet={tablet} initial={ownWords} />
+      )}
+    </div>
+  );
+}
+
+/**
+ * The crew member's own words, translated offline on the hub (NLLB-200) and
+ * sent only after the crew member has seen the translation. The passenger is
+ * told it is machine-translated: unlike the verified replies, nobody checked it.
+ */
+function OwnWords({ r, tablet, initial }: { r: CrewRequest; tablet: CrewTabletApi; initial: string }) {
+  const [text, setText] = useState(initial);
+  const [translated, setTranslated] = useState<{ source: string; text: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const lang = languageInfo(r.lang);
+  // Load the translation model while the crew member is still typing or speaking.
+  useEffect(() => {
+    void fetch(`${hubBaseUrl()}/api/translate/warm`, { method: 'POST' }).catch(() => undefined);
+  }, []);
+  const translate = async () => {
+    const source = text.trim();
+    if (!source) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(`${hubBaseUrl()}/api/translate`, { method: 'POST', body: JSON.stringify({ text: source, from: 'ja', to: r.lang }) });
+      const body = (await res.json()) as { text?: string; error?: string };
+      if (!res.ok || !body.text) throw new Error(body.error ?? 'translation failed');
+      setTranslated({ source, text: body.text });
+    } catch (e) {
+      setError(`Could not translate: ${e instanceof Error ? e.message : String(e)}`);
+    }
+    setBusy(false);
+  };
+  const fresh = translated && translated.source === text.trim();
+  return (
+    <div className="crew2-own">
+      <label className="crew2-own__label" lang="en">
+        自分の言葉 · Your own words (Japanese)
+        <textarea value={text} maxLength={300} rows={2} onChange={(e) => setText(e.target.value)} placeholder="例: 毛布をすぐにお持ちします" />
+      </label>
+      <button className="crew2-own__btn" disabled={busy || !text.trim()} onClick={() => void translate()}>
+        {busy ? '翻訳中… · Translating…' : `${lang.englishName}に翻訳 · Translate to ${lang.englishName}`}
+      </button>
+      {error && (
+        <p className="crew2-note" lang="en">
+          {error}
+        </p>
+      )}
+      {fresh && (
+        <div className="crew2-own__preview">
+          <small lang="en">Passenger will see (machine-translated, not checked):</small>
+          <q lang={lang.bcp47}>{translated.text}</q>
+          <button className="crew2-reply t-positive" onClick={() => tablet.sendMessage(r.requestId, { original: translated.source, text: translated.text, lang: r.lang })}>
+            <span>この訳を送る</span>
+            <small lang="en">Send this translation</small>
+          </button>
         </div>
       )}
     </div>

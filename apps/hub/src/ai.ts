@@ -15,6 +15,7 @@ import {
 import { loadNeedHead } from './head';
 import { fromDevanagari, loadLanguagePacks, withLanguagePacks, type LanguagePack } from './langpacks';
 import { ASR_MODELS, EMBED_MODEL, MODEL_DIR, type AsrSize } from './models';
+import { createNllb, type Translator } from './translate';
 
 /**
  * The crew tablet's offline AI: Whisper for speech → text and
@@ -204,6 +205,7 @@ export interface AiEngineOptions {
   /** Factories are injectable for tests. */
   loadAsr?: () => Promise<Transcriber>;
   loadEmbedder?: () => Promise<Embedder>;
+  loadTranslator?: () => Promise<Translator>;
 }
 
 export class AiEngine {
@@ -213,6 +215,7 @@ export class AiEngine {
   private packs = loadLanguagePacks();
   private keyword = createKeywordMatcher(withLanguagePacks(undefined, this.packs));
   private embedder: Embedder | null = null;
+  private translator: Promise<Translator> | null = null;
   private queue: Promise<unknown> = Promise.resolve();
   private pending = 0;
   private asrFailures = 0;
@@ -416,6 +419,29 @@ export class AiEngine {
   async understandMany(text: string): Promise<UnderstoodRequests | undefined> {
     if (!mayHoldSeveral(text)) return undefined;
     return understandRequests(text, (part) => this.matchNeeds(part), this.keyword);
+  }
+
+  /**
+   * The crew member's own words in the passenger's language (NLLB-200, offline).
+   * Loaded on first use, so a hub that never needs it never pays its memory.
+   */
+  async translate(text: string, from: string, to: string): Promise<string> {
+    if (from === to) return text;
+    const translator = await this.loadTranslator();
+    return this.serial(() => withTimeout(translator.translate(text, from, to), 30_000));
+  }
+
+  /** Start loading the translation model (~15 s the first time), e.g. when a crew member opens "own words". */
+  warmTranslator(): void {
+    this.loadTranslator().catch(() => undefined);
+  }
+
+  private loadTranslator(): Promise<Translator> {
+    this.translator ??= (this.options.loadTranslator ?? (() => createNllb(this.options.threads)))().catch((e: unknown) => {
+      this.translator = null;
+      throw e;
+    });
+    return this.translator;
   }
 
   /** Crew speech → closest verified reply (null when unsure or unavailable). */

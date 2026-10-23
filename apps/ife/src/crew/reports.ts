@@ -53,7 +53,8 @@ export function openMedicalHandover(r: CrewRequest, state: CrewTabletState): voi
   const urgent = isUrgentMedical(r.medical);
   const doctorCall = state.announcements.find((a) => a.templateId === 'doctor_call' && a.at >= r.receivedAt);
   const actions = [
-    ...(r.reply ? [`${time(r.reply.at)} 返信 Reply: ${getReply(r.reply.replyId).text.ja} / ${getReply(r.reply.replyId).text.en}`] : []),
+    ...(r.reply?.replyId ? [`${time(r.reply.at)} 返信 Reply: ${getReply(r.reply.replyId).text.ja} / ${getReply(r.reply.replyId).text.en}`] : []),
+    ...(r.reply?.message ? [`${time(r.reply.at)} 返信 Own words (machine-translated): ${r.reply.message.original} → ${r.reply.message.text}`] : []),
     ...(doctorCall ? [`${time(doctorCall.at)} 医師の呼び出し Doctor call captioned on every seat`] : []),
   ];
   openPrintable(

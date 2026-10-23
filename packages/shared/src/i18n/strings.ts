@@ -524,6 +524,7 @@ const S = {
     vi: 'Bạn đã có yêu cầu này.',
   },
   'reply.from': { en: 'Cabin crew', hi: 'केबिन क्रू', ja: '客室乗務員', th: 'ลูกเรือ', id: 'Awak kabin', vi: 'Tiếp viên' },
+  'reply.machine': { en: 'Machine-translated, may have mistakes', hi: 'मशीन से अनुवादित, इसमें गलती हो सकती है', ja: '機械翻訳です。誤りがあるかもしれません', th: 'แปลโดยเครื่อง อาจมีข้อผิดพลาด', id: 'Terjemahan mesin, mungkin ada kesalahan', vi: 'Dịch tự động, có thể có lỗi' },
   'review.many': { en: 'I understood {n} requests', hi: 'मैंने {n} अनुरोध समझे', ja: '{n}件のお願いを理解しました', th: 'เข้าใจคำขอ {n} รายการ', id: 'Saya memahami {n} permintaan', vi: 'Tôi hiểu {n} yêu cầu' },
   'review.sendAll': { en: 'Send {n} to the crew', hi: '{n} क्रू को भेजें', ja: '{n}件を乗務員に送る', th: 'ส่ง {n} รายการให้ลูกเรือ', id: 'Kirim {n} ke awak', vi: 'Gửi {n} yêu cầu cho tiếp viên' },
   'review.notWanted': { en: 'Not wanted', hi: 'नहीं चाहिए', ja: '不要', th: 'ไม่ต้องการ', id: 'Tidak diminta', vi: 'Không cần' },

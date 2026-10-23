@@ -122,7 +122,8 @@ Crew replies are read aloud on the passenger's phone in their language, with the
   4. A **classifier trained** for cabin requests.
 
   At 85% confidence or above, the request is ready to send. Below that, the passenger sees *"Did you mean?"* pictures and *None of these, call crew*. When a keyword and the meaning model disagree, both are shown as pictures rather than one being guessed.
-- **Verified replies only.** Crew replies are pre-written phrases checked in all 6 languages. A crew member can also *say* a reply in Japanese; it is matched to the closest verified phrase and confirmed before it is sent. Free machine translation never reaches a passenger.
+- **Verified replies first.** Crew replies are pre-written phrases checked in all 6 languages. A crew member can also *say* a reply in Japanese. It is matched to the closest verified phrase and confirmed before it is sent.
+- **Own words, labelled.** When no verified reply fits, the crew member can send their own words, spoken or typed in Japanese. The hub translates them offline with NLLB-200 (`npm run models -- translate`, ~900 MB once; the first translation loads the model in ~15 s, later ones take 1–4 s). The crew member sees the translation before sending it. The passenger sees it marked *machine-translated, may have mistakes*, because nobody checked it.
 - **Care Mode.** A body map, a 0–10 pain scale, and symptom and condition lists, one tap from the home screen on both phone and seatback. The crew get a Japanese and English summary, with urgent reports first in red. One tap calls for a doctor; the call is captioned on every seat in that seat's language. The crew can also print a **handover sheet** for the doctor or the ground team.
 - **Crew console.** Live numbers: open requests, median answer time, understood first time, needed pictures, oldest wait, medical, languages.
   - Click a seat to see its language and the needs shared at check-in.

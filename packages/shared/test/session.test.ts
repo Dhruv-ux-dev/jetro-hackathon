@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { CrewTablet, LocalHub, PassengerSession, SimulatedCabinLink, type CabinBus, type PassengerProfile } from '../src';
+import { CrewTablet, LocalHub, crewReplyText, PassengerSession, SimulatedCabinLink, type CabinBus, type PassengerProfile } from '../src';
 
 const profile: PassengerProfile = { lang: 'hi', seat: '23C', name: 'Sharda', tags: ['senior', 'hard_of_hearing'], shareTagsWithCrew: true };
 
@@ -125,6 +125,21 @@ describe('PassengerSession delivery states', () => {
     session.submit({ needId: 'water', source: 'tap' });
     await flush(1);
     expect(crew!.getState().requests[0]!.tags).toEqual([]);
+  });
+
+  it("delivers the crew member's own words, marked as machine-translated, and reads them like a verified reply", async () => {
+    const { session, crew } = setup();
+    session.submit({ needId: 'blanket', source: 'tap' });
+    await flush(1);
+    const id = crew!.getState().requests[0]!.requestId;
+    crew!.sendMessage(id, { original: 'すぐに毛布をお持ちします', text: 'मैं तुरंत कंबल लाऊँगी', lang: 'hi' });
+    await flush(1);
+    const r = session.getState().requests[0]!;
+    expect(r.status).toBe('acknowledged');
+    expect(r.reply).toMatchObject({ message: { text: 'मैं तुरंत कंबल लाऊँगी', lang: 'hi' } });
+    expect(r.reply?.replyId).toBeUndefined();
+    expect(crewReplyText(r.reply, 'hi')).toBe('मैं तुरंत कंबल लाऊँगी');
+    expect(crew!.getState().requests[0]!.reply?.message?.original).toBe('すぐに毛布をお持ちします');
   });
 
   it('ignores messages for another seat', async () => {

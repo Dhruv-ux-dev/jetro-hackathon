@@ -375,7 +375,7 @@ export class PassengerSession {
         status: 'acknowledged',
         sentAt: r.sentAt ?? this.now(),
         waitingForConnection: false,
-        reply: { replyId: m.replyId, crewName: m.crewName, at: m.at },
+        reply: { ...(m.replyId ? { replyId: m.replyId } : {}), ...(m.message ? { message: m.message } : {}), crewName: m.crewName, at: m.at },
       });
       this.set({ replyToShow: r.id });
     }

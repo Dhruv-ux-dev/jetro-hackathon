@@ -143,6 +143,7 @@ export const BN: LocalePack = {
     'requests.showCard': 'ক্রুকে দেখান',
     'requests.limit': 'এই অনুরোধটি আপনার আগেই খোলা আছে।',
     'reply.from': 'কেবিন ক্রু',
+    'reply.machine': 'যন্ত্রে অনুবাদ, ভুল থাকতে পারে',
     'reply.playAgain': 'আবার শোনান',
     'card.title': 'ক্রুকে দেখান',
     'card.hint': 'একটি ছবির দিকে আঙুল দেখিয়ে স্ক্রিনটি একজন ক্রুকে দেখান। সংযোগ ছাড়াও কাজ করে।',

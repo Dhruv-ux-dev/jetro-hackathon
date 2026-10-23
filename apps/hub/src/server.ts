@@ -363,6 +363,30 @@ export function createHandler(opts: HandlerOptions) {
       if (!lang || typeof input.text !== 'string' || input.text.length > 300) return json(res, 400, { error: 'invalid request' });
       return json(res, 200, await understandText(input.text.trim(), lang, parseTarget(input.target), 0));
     }
+    if (path === '/api/translate/warm' && req.method === 'POST') {
+      opts.ai.warmTranslator();
+      return json(res, 202, { warming: true });
+    }
+    if (path === '/api/translate' && req.method === 'POST') {
+      // A crew member's own words for one passenger: machine-translated, and labelled so on the passenger's screen.
+      const body = await readBody(req, MAX_JSON_BYTES);
+      let input: { text?: unknown; from?: unknown; to?: unknown };
+      try {
+        input = JSON.parse(body.toString('utf8'));
+      } catch {
+        return json(res, 400, { error: 'invalid JSON' });
+      }
+      const to = parseAnyLang(input.to);
+      const from = input.from === undefined ? 'ja' : parseAnyLang(input.from);
+      if (!to || !from || typeof input.text !== 'string' || !input.text.trim() || input.text.length > 300) return json(res, 400, { error: 'invalid request' });
+      const t0 = Date.now();
+      try {
+        const text = await opts.ai.translate(input.text.trim(), from, to);
+        return json(res, 200, { text, from, to, ms: Date.now() - t0, machine: true });
+      } catch (e) {
+        return json(res, 503, { error: e instanceof Error ? e.message : String(e) });
+      }
+    }
     if (path === '/api/trust' && req.method === 'GET') {
       const cert = opts.certificate?.() ?? null;
       return json(res, 200, {

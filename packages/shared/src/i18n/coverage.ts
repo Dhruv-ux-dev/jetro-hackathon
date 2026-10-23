@@ -30,7 +30,7 @@ export const PASSENGER_PATH_KEYS = [
   'status.pending', 'status.stepRequest', 'status.waiting', 'status.sent', 'status.acknowledged', 'status.failed',
   'status.cancelled', 'status.closed', 'status.pendingHint', 'status.waitingHint', 'status.sentHint', 'status.failedHint',
   'requests.title', 'requests.empty', 'requests.thanks', 'requests.cancel', 'requests.showCard', 'requests.limit',
-  'reply.from', 'reply.playAgain', 'voice.mayHaveNoVoice',
+  'reply.from', 'reply.machine', 'reply.playAgain', 'voice.mayHaveNoVoice',
   'card.title', 'card.hint',
   'nav.home', 'nav.requests', 'nav.card', 'nav.flight', 'nav.settings', 'nav.request',
   'link.online', 'link.offline', 'link.offlineHint',

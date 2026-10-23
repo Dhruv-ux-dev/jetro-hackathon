@@ -21,6 +21,7 @@ import { NEEDS, languageName } from '@hearme/shared';
 import { loadTransformers } from '../ai';
 import { PACK_DIR, checkPack, type LanguagePack } from '../langpacks';
 import { TRANSLATE_MODEL, inferenceThreads } from '../models';
+import { keepTarget } from '../translate';
 
 /** NLLB-200 and Whisper names for languages likely on India / South-East Asia routes. */
 const LANGS: Record<string, { nllb: string; whisper?: string }> = {
@@ -43,22 +44,6 @@ const LANGS: Record<string, { nllb: string; whisper?: string }> = {
   ko: { nllb: 'kor_Hang', whisper: 'korean' },
   zh: { nllb: 'zho_Hans', whisper: 'chinese' },
 };
-
-/**
- * Keep the translation proper: stop at the first word in another script
- * (non-Latin targets) and drop words repeated back to back.
- */
-function keepTarget(text: string, script: string): string {
-  const own = new RegExp(`\\p{Script=${script}}`, 'u');
-  const letter = /\p{L}/u;
-  const kept: string[] = [];
-  for (const word of text.trim().split(/\s+/)) {
-    if (script !== 'Latn' && letter.test(word) && !own.test(word)) break;
-    if (word === '-' || word === kept[kept.length - 1]) continue;
-    kept.push(word);
-  }
-  return kept.join(' ');
-}
 
 async function draft(code: string): Promise<LanguagePack> {
   const lang = LANGS[code];

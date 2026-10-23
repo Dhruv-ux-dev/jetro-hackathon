@@ -6,7 +6,7 @@ import {
   evidenceStringKey,
   getNeed,
   getPurpose,
-  getReply,
+  crewReplyText,
   type LangCode,
   languageInfo,
   localized,
@@ -15,7 +15,6 @@ import {
   type NeedPurpose,
   needsInCategory,
   purposeLabelOf,
-  replyTextOf,
   requestTitle,
   translator,
 } from '@hearme/shared';
@@ -516,7 +515,7 @@ function ReplyModal({ lang }: { lang: LangCode }) {
   const id = useSession(session, (s) => s.replyToShow);
   const r = useSession(session, (s) => s.requests.find((x) => x.id === s.replyToShow));
   const prefs = useSession(session, (s) => s.prefs);
-  const text = r?.reply ? replyTextOf(getReply(r.reply.replyId), lang) : '';
+  const text = crewReplyText(r?.reply, lang);
   const voice = prefs.replyChannels.includes('voice');
   const buzz = prefs.replyChannels.includes('buzz');
   const info = languageInfo(lang);
@@ -558,6 +557,11 @@ function ReplyModal({ lang }: { lang: LangCode }) {
             <T v="heading" live="assertive">
               {text}
             </T>
+            {r.reply.message && (
+              <T v="caption" color={th.p.warning}>
+                ⚠ {tr('reply.machine')}
+              </T>
+            )}
             {voice && play !== 'idle' && (
               <T v="caption" color={play === 'blocked' || play === 'no-voice' ? th.p.warning : th.p.textMuted}>
                 {play === 'speaking'

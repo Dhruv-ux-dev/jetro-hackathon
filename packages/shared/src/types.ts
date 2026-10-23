@@ -141,8 +141,23 @@ export type ReplyId =
   | 'meal_soon'
   | 'staff_on_arrival';
 
+/**
+ * A crew member's own words, machine-translated offline. Not checked like
+ * the verified replies, so the passenger is told it may be wrong.
+ */
+export interface CrewMessage {
+  /** What the crew member said or typed (Japanese). */
+  original: string;
+  /** The machine translation the passenger reads. */
+  text: string;
+  /** The language `text` is in. */
+  lang: string;
+}
+
+/** A verified reply (`replyId`), or the crew member's own words (`message`). */
 export interface CrewReply {
-  replyId: ReplyId;
+  replyId?: ReplyId;
+  message?: CrewMessage;
   /** Crew first name only, no surname. */
   crewName?: string;
   at: number;

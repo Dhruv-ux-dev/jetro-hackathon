@@ -2,7 +2,7 @@ import { getNeed, getPurpose } from '../catalog/needs';
 import { getReply } from '../catalog/replies';
 import { needLabel, purposeLabel, replyTextOf } from '../i18n/resolve';
 import { t, type StringKey } from '../i18n/strings';
-import type { LangCode, PassengerRequest } from '../types';
+import type { CrewMessage, LangCode, PassengerRequest, ReplyId } from '../types';
 
 export type StatusTone = 'progress' | 'success' | 'danger' | 'neutral';
 
@@ -44,7 +44,13 @@ export function requestTitle(r: Pick<PassengerRequest, 'needId' | 'purposeId'>, 
 }
 
 export function replyText(r: PassengerRequest, lang: LangCode): string | undefined {
-  return r.reply ? replyTextOf(getReply(r.reply.replyId), lang) : undefined;
+  return r.reply ? crewReplyText(r.reply, lang) : undefined;
+}
+
+/** What the passenger reads: the verified reply in their language, or the crew member's own words as translated. */
+export function crewReplyText(reply: { replyId?: ReplyId; message?: CrewMessage } | undefined, lang: LangCode): string {
+  if (reply?.message) return reply.message.text;
+  return reply?.replyId ? replyTextOf(getReply(reply.replyId), lang) : '';
 }
 
 /** Relative time like "12s" / "3 min", language-neutral enough for the prototype. */

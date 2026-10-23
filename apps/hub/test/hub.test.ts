@@ -53,6 +53,7 @@ beforeEach(async () => {
     threads: 1,
     loadEmbedder: async () => fakeEmbedder,
     loadAsr: async () => ({ transcribe: async (_s, lang) => (lang === 'hi' ? 'मुझे गरम पानी चाहिए' : 'hot water please') }),
+    loadTranslator: async () => ({ translate: async (text, from, to) => `[${from}→${to}] ${text}` }),
   });
   await ai.start();
   relay = new CabinRelay({ heartbeatMs: 200, pingMs: 60_000 });
@@ -119,6 +120,30 @@ describe('cabin hub', () => {
       crew.announce('seatbelt_on');
       await waitFor(() => session.getState().announcements.length === 1);
       expect(session.getState().announcements[0]!.templateId).toBe('seatbelt_on');
+    } finally {
+      session.dispose();
+      link.dispose();
+      crew.dispose();
+    }
+  });
+
+  it("translates a crew member's own words and delivers them to that seat only", async () => {
+    const t = await (await fetch(`${base}/api/translate`, { method: 'POST', body: JSON.stringify({ text: 'すぐにお持ちします', to: 'hi' }) })).json();
+    expect(t).toMatchObject({ text: '[ja→hi] すぐにお持ちします', machine: true });
+    expect((await fetch(`${base}/api/translate`, { method: 'POST', body: JSON.stringify({ text: '', to: 'hi' }) })).status).toBe(400);
+    expect((await fetch(`${base}/api/translate`, { method: 'POST', body: JSON.stringify({ text: 'x', to: 'zz' }) })).status).toBe(400);
+    const crew = new RemoteCrewTablet(base, { factory });
+    const link = new DemoCabinLink('hub', { hubUrl: base, wsFactory: factory });
+    const session = new PassengerSession({ link, device: 'phone' });
+    try {
+      session.setProfile({ lang: 'hi', seat: '23C', tags: [], shareTagsWithCrew: false });
+      await waitFor(() => session.getState().link === 'online' && crew.isConnected());
+      session.submit({ needId: 'blanket', source: 'tap' });
+      await waitFor(() => crew.getState().requests.length === 1);
+      crew.sendMessage(crew.getState().requests[0]!.requestId, { original: 'すぐにお持ちします', text: t.text, lang: 'hi' });
+      await waitFor(() => !!session.getState().requests[0]?.reply);
+      expect(session.getState().requests[0]!.reply?.message).toMatchObject({ original: 'すぐにお持ちします', text: t.text });
+      expect(crew.getState().requests[0]!.status).toBe('replied');
     } finally {
       session.dispose();
       link.dispose();
