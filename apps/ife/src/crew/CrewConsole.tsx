@@ -709,6 +709,11 @@ function OwnWords({ r, tablet, initial }: { r: CrewRequest; tablet: CrewTabletAp
     }
     setBusy(false);
   };
+  // Spoken words that matched no verified reply: translate them straight away, so Send is one tap.
+  useEffect(() => {
+    if (initial.trim()) void translate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const fresh = translated && translated.source === text.trim();
   return (
     <div className="crew2-own">
@@ -716,9 +721,11 @@ function OwnWords({ r, tablet, initial }: { r: CrewRequest; tablet: CrewTabletAp
         自分の言葉 · Your own words (Japanese)
         <textarea value={text} maxLength={300} rows={2} onChange={(e) => setText(e.target.value)} placeholder="例: 毛布をすぐにお持ちします" />
       </label>
-      <button className="crew2-own__btn" disabled={busy || !text.trim()} onClick={() => void translate()}>
-        {busy ? '翻訳中… · Translating…' : `${lang.englishName}に翻訳 · Translate to ${lang.englishName}`}
-      </button>
+      {!fresh && (
+        <button className="crew2-own__btn" disabled={busy || !text.trim()} onClick={() => void translate()}>
+          {busy ? '翻訳中… · Translating…' : `${lang.englishName}に翻訳して確認 · Translate to ${lang.englishName}, then send`}
+        </button>
+      )}
       {error && (
         <p className="crew2-note" lang="en">
           {error}
